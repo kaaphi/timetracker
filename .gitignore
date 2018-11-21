@@ -4,4 +4,4 @@
 /.gradle/
 bin
 /build/
-time_tracking_db.h2.db
+time_tracking_db.*

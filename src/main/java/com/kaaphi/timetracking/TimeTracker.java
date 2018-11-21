@@ -1,26 +1,26 @@
 package com.kaaphi.timetracking;
 
-import java.awt.Image;
 import java.awt.MenuItem;
 import java.awt.PopupMenu;
 import java.awt.SystemTray;
 import java.awt.TrayIcon;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
-import java.io.IOException;
-import java.io.InputStream;
 import java.lang.Thread.UncaughtExceptionHandler;
 import java.text.SimpleDateFormat;
 import java.util.Calendar;
+import java.util.Collections;
 import java.util.Date;
 import java.util.GregorianCalendar;
 import java.util.LinkedHashMap;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 
-import javax.swing.ImageIcon;
 import javax.swing.JOptionPane;
 import javax.swing.JTextField;
 import javax.swing.UIManager;
@@ -29,7 +29,10 @@ import org.apache.log4j.Logger;
 
 import com.kaaphi.timetracking.PromptFrame.PromptResponse;
 import com.kaaphi.timetracking.TimeEntryEventEditor.EditResult;
+import com.kaaphi.timetracking.data.CategoryDefaultsDao;
 import com.kaaphi.timetracking.data.H2TrackingEntryDao;
+import com.kaaphi.timetracking.data.TextFileCategoryDefaultsDao;
+import com.kaaphi.timetracking.data.TrackingDaoException;
 import com.kaaphi.timetracking.data.TrackingEntry;
 import com.kaaphi.timetracking.data.TrackingEntryDao;
 import com.kaaphi.timetracking.data.TrackingStatistics;
@@ -44,10 +47,12 @@ public class TimeTracker implements Runnable {
 	private PromptFrame promptFrame;
 	private ScheduledExecutorService executor = Executors.newSingleThreadScheduledExecutor();
 	private TrackingEntryDao dao;
+	private CategoryDefaultsDao categoryDefaultsDao;
 	private Date start;
 	
-	public TimeTracker(TrackingEntryDao dao) throws Exception {
+	public TimeTracker(TrackingEntryDao dao, CategoryDefaultsDao categoryDefaultsDao) throws Exception {
 		this.dao = dao;
+		this.categoryDefaultsDao = categoryDefaultsDao;
 		TrayIcon icon = new TrayIcon(TimeIcon.INSTANCE.getImage());
 		
 		PopupMenu popup = new PopupMenu();
@@ -133,11 +138,29 @@ public class TimeTracker implements Runnable {
 			}
 		}
 	}
+	
+	private Map<String, Set<String>> loadDefaults() throws TrackingDaoException {
+		Map<String, Set<String>> recents = dao.getRecentActivitiesAndCategories(new Date(System.currentTimeMillis() - TimeUnit.DAYS.toMillis(5)));
+		
+		//add to default map in order of default categories
+		Map<String, Set<String>> defaultMap = categoryDefaultsDao.getDefaultCategories().stream()
+				.collect(Collectors.toMap(
+						Function.identity(), 
+						key -> recents.getOrDefault(key, Collections.emptySet()),
+						(a,b) -> {throw new IllegalStateException();},
+						LinkedHashMap::new
+							));
+		
+		//add any remaining categories that aren't in defaults
+		recents.forEach(defaultMap::putIfAbsent);
+		
+		return defaultMap;
+	}
 
 	private boolean doEdit() {
 		try {
 			TrackingEntry entry = dao.loadLastEntry();			
-			EditResult result = TimeEntryEventEditor.showDialog(start, entry != null ? entry.getEndDate() : null, dao.getRecentActivitiesAndCategories(new Date(System.currentTimeMillis() - TimeUnit.DAYS.toMillis(5))));
+			EditResult result = TimeEntryEventEditor.showDialog(start, entry != null ? entry.getEndDate() : null, loadDefaults());
 			if(result != null) {
 				log.debug("Before save.");
 				dao.saveEntries(result.getEntries());
@@ -268,9 +291,10 @@ public class TimeTracker implements Runnable {
 		}
 		
 		TrackingEntryDao dao = H2TrackingEntryDao.getDao(db);
+		CategoryDefaultsDao categoryDao = TextFileCategoryDefaultsDao.getDao(db + ".categories");
 		
 		UIManager.setLookAndFeel(UIManager.getSystemLookAndFeelClassName());
-		TimeTracker t = new TimeTracker(dao);
+		TimeTracker t = new TimeTracker(dao, categoryDao);
 		
 		t.go();
 	}
