@@ -48,7 +48,7 @@ public class TimeTracker implements Runnable {
 	
 	public TimeTracker(TrackingEntryDao dao) throws Exception {
 		this.dao = dao;
-		TrayIcon icon = new TrayIcon(loadIcon());
+		TrayIcon icon = new TrayIcon(TimeIcon.INSTANCE.getImage());
 		
 		PopupMenu popup = new PopupMenu();
 		MenuItem enterTime = new MenuItem("Enter Time Now");
@@ -253,27 +253,6 @@ public class TimeTracker implements Runnable {
 		return c.getTimeInMillis() - date;
 	}
 
-	private static Image loadIcon() {
-	    InputStream in = null;
-	    try {
-	        in = ClassLoader.getSystemResourceAsStream("clock.png");
-            int len = in.available();
-            byte[] bytes = new byte[len];
-            in.read(bytes, 0, len);
-            in.close();
-            return new ImageIcon(bytes).getImage();
-	    } catch (Throwable th) {
-	        log.error("Failed to load icon.", th);
-	        return null;
-	    } finally {
-	        try {
-	            if(in != null) in.close();
-	        } catch (IOException e) {
-	            log.error("Failed to close icon input stream.", e);
-	        }
-	    }
-	}
-	
 	public static void main(String[] args) throws Exception {
 		Thread.setDefaultUncaughtExceptionHandler(new UncaughtExceptionHandler() {
 			public void uncaughtException(Thread t, Throwable e) {

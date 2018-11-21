@@ -5,6 +5,7 @@ import static com.kaaphi.timetracking.UiUtil.formatHourMinuteDuration;
 
 import java.awt.BorderLayout;
 import java.awt.Dimension;
+import java.awt.Image;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.event.WindowAdapter;
@@ -25,6 +26,7 @@ import java.util.concurrent.TimeUnit;
 import javax.swing.BoxLayout;
 import javax.swing.JButton;
 import javax.swing.JDialog;
+import javax.swing.JFrame;
 import javax.swing.JLabel;
 import javax.swing.JOptionPane;
 import javax.swing.JPanel;
@@ -66,6 +68,7 @@ public class TimeEntryEventEditor extends JDialog implements TrackingEntryEventM
 				return null;
 			}
 		} finally {
+			((DummyFrame)editor.getParent()).dispose();
 			editor.dispose();
 		}
 	}
@@ -94,7 +97,7 @@ public class TimeEntryEventEditor extends JDialog implements TrackingEntryEventM
 	}
 	
 	public TimeEntryEventEditor(Date start, Date end, Date lastEntryEnd, Map<String, Set<String>> categories) {
-		super();
+		super(new DummyFrame());
 		this.lastEntryEnd = lastEntryEnd;
 		
 		createGui();
@@ -266,6 +269,16 @@ public class TimeEntryEventEditor extends JDialog implements TrackingEntryEventM
 	
 	public Date getEnd() {
 		return model.getEnd();
+	}
+	
+	private static class DummyFrame extends JFrame {
+	    DummyFrame() {
+	        super("Enter Time");
+	        setUndecorated(true);
+	        setVisible(true);
+	        setLocationRelativeTo(null);
+	        setIconImages(Arrays.asList(TimeIcon.INSTANCE.getImage()));
+	    }
 	}
 	
 	public static void main(String[] args) {
