@@ -1,9 +1,25 @@
+buildscript {
+  repositories {
+    jcenter()
+  }
+  dependencies {
+    classpath 'edu.sc.seis.gradle:launch4j:2.4.4'
+  }
+}
+
+
 apply plugin: 'java'
+apply plugin: 'edu.sc.seis.launch4j'
 
 version = '1.0'
 
 repositories {
 	mavenCentral()
+}
+
+createExe {
+  mainClassName = "com.kaaphi.timetracking.TimeTracker"
+  icon = "${projectDir}/src/main/resources/clock.ico"
 }
 
 dependencies {
