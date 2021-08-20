@@ -1,9 +1,11 @@
 buildscript {
   repositories {
-    jcenter()
+    maven {
+      url "https://plugins.gradle.org/m2/"
+    }
   }
   dependencies {
-    classpath 'edu.sc.seis.gradle:launch4j:2.4.4'
+    classpath "edu.sc.seis.launch4j:launch4j:2.5.0"
   }
 }
 
@@ -20,6 +22,7 @@ repositories {
 createExe {
   mainClassName = "com.kaaphi.timetracking.TimeTracker"
   icon = "${projectDir}/src/main/resources/clock.ico"
+  bundledJrePath = "%JAVA_HOME%;%PATH%"
 }
 
 dependencies {
